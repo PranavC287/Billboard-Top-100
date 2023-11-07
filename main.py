@@ -28,7 +28,7 @@ def closeConnection(_conn, _dbFile):
 
 def dropTable(_conn, tableName):
     print("++++++++++++++++++++++++++++++++++")
-    print("Drop tables")
+    print("Drop table " + tableName)
     try:
         cur = _conn.cursor()
         cur.execute("DROP TABLE " + tableName)
@@ -79,7 +79,7 @@ def createTableArtist(_conn):
 
 def populateArtist(_conn):
     print("++++++++++++++++++++++++++++++++++")
-    print("Populate table")
+    print("Populate artist table")
     try:
         file_path = "DataTotales.txt"
         with open(file_path, "r") as file:
@@ -92,7 +92,7 @@ def populateArtist(_conn):
             if len(parts) == 2:
                 artist = parts[1].strip()
                 cur.execute(
-                    "INSERT INTO artist(a_artistkey, a_name, a_about) VALUES (?, ?, ?)", (k, artist, n))
+                    "INSERT OR IGNORE INTO artist(a_artistkey, a_name, a_about) VALUES (?, ?, ?)", (k, artist, n),)
                 k = k+1
 
     except Error as e:
@@ -106,10 +106,41 @@ def createTableAlbum(_conn):
         cur = _conn.cursor()
         cur.execute(
         "CREATE TABLE album (\
-        al_artistkey decimal(9,0) not null, \
-        al_songkey decimal(9,0) not null, \
-        al_name char(100) not null)")
+        al_songkey decimal(9,0) not null,\
+        al_artistkey decimal(9,0) not null,\
+        al_name char(100) not null,\
+        FOREIGN KEY (al_artistkey) REFERENCES artist (a_artistkey),\
+        FOREIGN KEY (al_songkey) REFERENCES song (s_songkey))")
 
+    except Error as e:
+        print(e)
+
+def populateAlbum(_conn):
+    print("++++++++++++++++++++++++++++++++++")
+    print("Populate album table")
+    try:
+        file_path = "DataTotales.txt"
+        with open(file_path, "r") as file:
+            data = file.readlines()
+        cur = _conn.cursor()
+        cur.execute(
+        "CREATE TABLE temp (\
+        t_song char(100) not null,\
+        t_artist char(100) not null)")
+        n = "Work in progress"
+        for line in data:
+            parts = line.strip().split("' by ")
+            if len(parts) == 2:
+                song = parts[0].strip()
+                artist = parts[1].strip()
+                cur.execute(
+                    "INSERT OR IGNORE INTO temp(t_song, t_artist) VALUES (?, ?)", (song[5:], artist),)
+        cur.execute(
+            "INSERT INTO album(al_songkey, al_artistkey, al_name)\
+            SELECT s_songkey, a_artistkey FROM temp, artist, song\
+            WHERE t_song = s_name \
+            AND t_artist = a_name\
+            SELECT 'Work in progress'")
     except Error as e:
         print(e)
 
@@ -129,7 +160,7 @@ def createTableSong(_conn):
 
 def populateSong(_conn):
     print("++++++++++++++++++++++++++++++++++")
-    print("Populate Song")
+    print("Populate ong table")
     try:
         file_path = "DataTotales.txt"
         with open(file_path, "r") as file:
@@ -142,7 +173,7 @@ def populateSong(_conn):
             if len(parts) == 2:
                 name = parts[0].strip()
                 cur.execute(
-                    "INSERT INTO song(s_songkey, s_name, s_releaseyearkey) VALUES (?, ?, ?)", (k, name[5:], n))
+                    "INSERT OR IGNORE INTO song(s_songkey, s_name, s_releaseyearkey) VALUES (?, ?, ?)", (k, name[5:], n),)
                 k = k+1
         
     except Error as e:
@@ -163,7 +194,7 @@ def createTableYear(_conn):
 
 def populateYear(_conn):
     print("++++++++++++++++++++++++++++++++++")
-    print("Populate table")
+    print("Populate year table")
     try:
         cur = _conn.cursor()
         y = 2000
@@ -202,6 +233,19 @@ def createTableGenrePrSong(_conn):
     except Error as e:
         print(e)
 
+
+def Q1(_conn):
+    print("++++++++++++++++++++++++++++++++++")
+    print("Create genreprsong table")
+    try:
+        cur = _conn.cursor()
+        cur.execute(
+        "SELECT a_name FROM artist (\
+        WHERE a_name")
+
+    except Error as e:
+        print(e)
+
 def main():
 #    file_path = 'Data.txt'
 #    with open(file_path, 'w') as file:
@@ -215,23 +259,27 @@ def main():
     # create a database connection
     conn = openConnection(database)
     with conn:
-        dropTable(conn, "song")
-        createTableBillboard(conn)
-        createTableArtist(conn)
-        createTableAlbum(conn)
-        createTableSong(conn)
-        createTableYear(conn)
-        createTableGenre(conn)
-        createTableGenrePrSong(conn)
-
-        #populateBillboard
-        populateArtist(conn)
-        populateYear(conn)
-        #populateAlbum
-        populateSong(conn)
+        dropTable(conn, "album")
+        #dropTable(conn, "song")
+        #dropTable(conn, "artist")
         
+        #createTableYear(conn)
+        #createTableBillboard(conn)
+        #createTableArtist(conn)
+        createTableAlbum(conn)
+        #createTableSong(conn)
+        #createTableGenre(conn)
+        #createTableGenrePrSong(conn)
+
+        #populateYear(conn)
+        #populateBillboard
+        #populateArtist(conn)
+        populateAlbum(conn)
+        #populateSong(conn)
         #populateGenre
         #populateGenrePrSong
+
+        dropTable(conn, "temp")
         
 
     closeConnection(conn, database)
