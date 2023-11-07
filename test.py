@@ -46,10 +46,10 @@ def createTableBillboard(_conn):
         cur = _conn.cursor()
         cur.execute(
         "CREATE TABLE billboard (\
-        b_songkey decimal(2,0) not null, \
-        b_rank decimal(2,0) not null\
-        b_artistkey decimal(2,0) not null, \
-        b_yearkey decimal(2,0) not null)")
+        b_songkey decimal(5,0) not null, \
+        b_rank decimal(5,0) not null,\
+        b_artistkey decimal(5,0) not null, \
+        b_yearkey decimal(5,0) not null)")
 
     except Error as e:
         print(e)
@@ -60,9 +60,9 @@ def populateBillboard(_conn):
     try:
         cur = _conn.cursor()
         for x in range(21):
-            s = random.randrange(1000)
-            a = random.randrange(1000)
             for i in range(99):
+                s = random.randrange(1000)
+                a = random.randrange(1000)
                 cur.execute(
                     "INSERT INTO billboard(b_songkey, b_artistkey, b_yearkey, b_rank) VALUES (?, ?, ?, ?)", (s, a, x+3, i+1),)
     except Error as e:
@@ -151,7 +151,7 @@ def createTableSong(_conn):
 
 def populateSong(_conn):
     print("++++++++++++++++++++++++++++++++++")
-    print("Populate ong table")
+    print("Populate song table")
     try:
         file_path = "DataTotales.txt"
         with open(file_path, "r") as file:
@@ -256,18 +256,6 @@ def populateGenrePrSong(_conn):
         print(e)
 
 
-def Q1(_conn):
-    print("++++++++++++++++++++++++++++++++++")
-    print("Create genreprsong table")
-    try:
-        cur = _conn.cursor()
-        cur.execute(
-        "SELECT a_name FROM artist (\
-        WHERE a_name")
-
-    except Error as e:
-        print(e)
-
 def main():
 #    file_path = 'Data.txt'
 #    with open(file_path, 'w') as file:
@@ -299,7 +287,7 @@ def main():
         createTableGenrePrSong(conn)
 
         populateYear(conn)
-        populateBillboard
+        populateBillboard(conn)
         populateArtist(conn)
         populateAlbum(conn)
         populateSong(conn)

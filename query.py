@@ -1,7 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 
-def Q1(_conn, val):
+def Q1(_conn, AName):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -10,13 +10,13 @@ def Q1(_conn, val):
         "SELECT S.Name\
         FROM SONGS S\
         JOIN ARTIST A ON S.N_Key = A.N_Key\
-        WHERE A.Name = ?;", (val),)
+        WHERE A.Name = ?;", (AName),)
 
     except Error as e:
         print(e)
 
 
-def Q2(_conn, val):
+def Q2(_conn, AName):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -25,13 +25,13 @@ def Q2(_conn, val):
         "SELECT COUNT(*) AS SongCount\
         FROM SONGS \
         JOIN ARTIST A ON S.N_Key = A.N_Key\
-        WHERE A.Name = ?;", (val),)
+        WHERE A.Name = ?;", (AName),)
 
     except Error as e:
         print(e)
 
 
-def Q3(_conn, vala, valb, valc):
+def Q3(_conn, yr, year, Gname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -44,13 +44,13 @@ def Q3(_conn, vala, valb, valc):
         AND S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)\
         AND S.G_Key = (SELECT G_Key FROM GENRE WHERE Name = ?)\
         ORDER BY B.Rank\
-        LIMIT 10;", (vala, valb, valc))
+        LIMIT 10;", (yr, year, Gname))
 
     except Error as e:
         print(e)
 
 
-def Q4(_conn, vala, valb):
+def Q4(_conn, Sname, yr):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -59,13 +59,13 @@ def Q4(_conn, vala, valb):
         "SELECT A.Name\
         FROM ARTIST A\
         JOIN SONGS S ON A.N_Key = S.N_Key\
-        WHERE S.Name = ? AND S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?);", (vala, valb))
+        WHERE S.Name = ? AND S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?);", (Sname, yr))
 
     except Error as e:
         print(e)
 
 
-def Q5(_conn, vala, valb):
+def Q5(_conn, Aname, yr):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -76,7 +76,7 @@ def Q5(_conn, vala, valb):
         JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
         WHERE S.N_Key = (SELECT N_Key FROM ARTIST WHERE Name = ?)\
         AND B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)\
-        AND B.Rank <= 10;", (vala, valb))
+        AND B.Rank <= 10;", (Aname, yr))
 
     except Error as e:
         print(e)
@@ -99,7 +99,7 @@ def Q6(_conn):
         print(e)                
 
 
-def Q7(_conn, val):
+def Q7(_conn, yr):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -112,13 +112,13 @@ def Q7(_conn, val):
         WHERE S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)\
         GROUP BY G.G_Key\
         ORDER BY GenreCount DESC\
-        LIMIT 1;", (val),)
+        LIMIT 1;", (yr),)
 
     except Error as e:
         print(e)                
 
 
-def Q8(_conn, val):
+def Q8(_conn, Aname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -134,13 +134,13 @@ def Q8(_conn, val):
             GROUP BY Y_Key\
         ) MaxRanks ON B.Y_Key = MaxRanks.Y_Key AND B.Rank = MaxRanks.MaxRank\
         JOIN YEAR ON B.Y_Key = YEAR.Y_Key\
-        WHERE A.Name = ?;", (val))
+        WHERE A.Name = ?;", (Aname))
 
     except Error as e:
         print(e)                               
 
 
-def Q9(_conn, vala, valb):
+def Q9(_conn, Aname, yr):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -150,13 +150,13 @@ def Q9(_conn, vala, valb):
         FROM SONGS S\
         JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
         JOIN ARTIST A ON B.N_Key = A.N_Key\
-        WHERE A.Name = ? AND B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?);", (vala, valb),)
+        WHERE A.Name = ? AND B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?);", (Aname, yr),)
 
     except Error as e:
         print(e)                
 
 
-def Q10(_conn, val):
+def Q10(_conn, yr):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -169,13 +169,13 @@ def Q10(_conn, val):
         WHERE B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?) AND B.Rank <= 10\
         GROUP BY A.N_Key\
         ORDER BY SongCount DESC\
-        LIMIT 1;", (val),)
+        LIMIT 1;", (yr),)
 
     except Error as e:
         print(e)          
 
 
-def Q11(_conn, vala, valb):
+def Q11(_conn, Gname, Aname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -186,13 +186,13 @@ def Q11(_conn, vala, valb):
         JOIN GENRE_PER_SONG GS ON S.S_Key = GS.S_Key\
         JOIN GENRE G ON GS.G_Key = G.G_Key\
         JOIN ARTIST A ON S.N_Key = A.N_Key\
-        WHERE G.Name = ? AND A.Name = ?;", (vala, valb),)
+        WHERE G.Name = ? AND A.Name = ?;", (Gname, Aname),)
 
     except Error as e:
         print(e)          
 
 
-def Q12(_conn, val):
+def Q12(_conn, Bchartdate):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -201,13 +201,13 @@ def Q12(_conn, val):
         "SELECT S.Name\
         FROM SONGS S\
         JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        WHERE B.ChartDate = ?;", (val),)
+        WHERE B.ChartDate = ?;", (Bchartdate),)
 
     except Error as e:
         print(e)          
 
 
-def Q13(_conn, val):
+def Q13(_conn, Aname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -217,7 +217,7 @@ def Q13(_conn, val):
         FROM ARTIST A\
         JOIN SONGS S ON A.N_Key = S.N_Key\
         JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        WHERE A.Name = ?;", (val),)
+        WHERE A.Name = ?;", (Aname),)
 
     except Error as e:
         print(e)          
@@ -238,7 +238,7 @@ def Q14(_conn):
         print(e)  
 
 
-def Q15(_conn, val):
+def Q15(_conn, Gname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -251,13 +251,13 @@ def Q15(_conn, val):
         LEFT JOIN GENRE G ON GS.G_Key = G.G_Key\
         WHERE G.Name <> ?\
         ORDER BY B.Rank\
-        LIMIT 10;", (val),)
+        LIMIT 10;", (Gname),)
 
     except Error as e:
         print(e)                  
 
 
-def Q16(_conn, val):
+def Q16(_conn, Aname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -266,13 +266,13 @@ def Q16(_conn, val):
         "SELECT COUNT(*) AS SongCount\
         FROM SONGS S\
         JOIN ARTIST A ON S.N_Key = A.N_Key\
-        WHERE A.Name = ?;", (val),)
+        WHERE A.Name = ?;", (Aname),)
 
     except Error as e:
         print(e)       
 
 
-def Q17(_conn, vala, valb):
+def Q17(_conn, yr, Aname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -284,13 +284,13 @@ def Q17(_conn, vala, valb):
         JOIN YEAR Y ON B.Y_Key = Y.Y_Key\
         JOIN ARTIST A ON S.N_Key = A.N_Key\
         WHERE Y.Year = ? AND A.Name = ?\
-        ORDER BY B", (vala,valb),)
+        ORDER BY B", (yr, Aname),)
 
     except Error as e:
         print(e)             
 
 
-def Q18(_conn, val):
+def Q18(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -301,12 +301,12 @@ def Q18(_conn, val):
         LEFT JOIN SONGS S ON A.N_Key = S.N_Key\
         GROUP BY A.Name\
         ORDER BY SongCount DESC\
-        LIMIT 1;", (val),)
+        LIMIT 1;")
 
     except Error as e:
         print(e)          
 
-def Q19(_conn, val):
+def Q19(_conn, Sname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -315,13 +315,13 @@ def Q19(_conn, val):
         "SELECT A.Name\
         FROM ARTIST A\
         JOIN SONGS S ON A.N_Key = S.N_Key\
-        WHERE S.Name = ?;", (val),)
+        WHERE S.Name = ?;", (Sname),)
 
     except Error as e:
         print(e)          
 
 
-def Q20(_conn, val):
+def Q20(_conn, yr):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -331,7 +331,7 @@ def Q20(_conn, val):
         FROM SONGS\
         WHERE Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = (?))\
         ORDER BY S_Key\
-        LIMIT 1;", (val),)
+        LIMIT 1;", (yr),)
 
     except Error as e:
         print(e)          
@@ -339,31 +339,31 @@ def Q20(_conn, val):
 def main():
     database = r"DatabaseTotalis.db"
     # create a database connection
-    conn, val = sqlite3.connect(database)
-    with conn, val:
-        Q1(conn, val)
-        Q2(conn, val)
-        Q3(conn, val)
-        Q4(conn, val)
-        Q5(conn, val)
-        Q6(conn, val)
-        Q7(conn, val)
-        Q8(conn, val)
-        Q9(conn, val)
-        Q10(conn, val)
-        Q11(conn, val)
-        Q12(conn, val)
-        Q13(conn, val)
-        Q14(conn, val)
-        Q15(conn, val)
-        Q16(conn, val)
-        Q17(conn, val)
-        Q18(conn, val)
-        Q19(conn, val)
-        Q20(conn, val)
+    conn = sqlite3.connect(database)
+    with conn:
+        Q1(conn, "Sean Paul")
+        Q2(conn, "Justin Timberlake")
+        Q3(conn, 2020, 2021, "Pop")
+        Q4(conn, "London Bridge", 2006)
+        Q5(conn, "Dance, Dance", 2006)
+        Q6(conn)
+        Q7(conn, 2005)
+        Q8(conn, "Lil Nas X")
+        Q9(conn, "Butter", 2021)
+        Q10(conn, 2006)
+        Q11(conn, "Rock", "AJR")
+        Q12(conn, 2006)
+        Q13(conn, "Rihanna")
+        Q14(conn)
+        Q15(conn, "Funk")
+        Q16(conn, "OneRepublic")
+        Q17(conn, 2014, "Nicki Minaj")
+        Q18(conn)
+        Q19(conn, "679")
+        Q20(conn, 2020)
         
 
-    conn, val.close()
+    conn.close()
 
 if __name__ == '__main__':
     main()
