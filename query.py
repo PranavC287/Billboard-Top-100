@@ -3,14 +3,18 @@ from sqlite3 import Error
 
 def Q1(_conn, AName):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("SELECT s_name FROM song")
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT S.Name\
-        FROM SONGS S\
-        JOIN ARTIST A ON S.N_Key = A.N_Key\
-        WHERE A.Name = ?;", (AName),)
+        "SELECT s_name FROM album, song, artist\
+        WHERE al_songkey = s_songkey \
+        AND al_artistkey = a_artistkey\
+        AND a_name = (?)", (AName,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)
@@ -18,15 +22,19 @@ def Q1(_conn, AName):
 
 def Q2(_conn, AName):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Get SongCount from artist")
     try:
         cur = _conn.cursor()
         cur.execute(
         "SELECT COUNT(*) AS SongCount\
-        FROM SONGS \
-        JOIN ARTIST A ON S.N_Key = A.N_Key\
-        WHERE A.Name = ?;", (AName),)
+        FROM song \
+        JOIN ARTIST ON s_songkey = a_artistkey\
+        WHERE a_name = (?);", (AName,))
 
+        data = cur.fetchall()
+        for row in data:
+            print(row)
+            
     except Error as e:
         print(e)
 
@@ -50,16 +58,13 @@ def Q3(_conn, yr, year, Gname):
         print(e)
 
 
-def Q4(_conn, Sname, yr):
+def Q4(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT A.Name\
-        FROM ARTIST A\
-        JOIN SONGS S ON A.N_Key = S.N_Key\
-        WHERE S.Name = ? AND S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?);", (Sname, yr))
+        "INSERT INTO song VALUES (101, 11, 'Centuries')")
 
     except Error as e:
         print(e)
@@ -257,16 +262,19 @@ def Q15(_conn, Gname):
         print(e)                  
 
 
-def Q16(_conn, Aname):
+def Q16(_conn, Sname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT COUNT(*) AS SongCount\
-        FROM SONGS S\
-        JOIN ARTIST A ON S.N_Key = A.N_Key\
-        WHERE A.Name = ?;", (Aname),)
+        "SELECT s_name \
+        FROM song\
+        WHERE s_name = ?;", (Sname,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)       
@@ -296,27 +304,24 @@ def Q18(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT A.Name, COUNT(S.S_Key) AS SongCount\
-        FROM ARTIST A\
-        LEFT JOIN SONGS S ON A.N_Key = S.N_Key\
-        GROUP BY A.Name\
-        ORDER BY SongCount DESC\
-        LIMIT 1;")
+        "UPDATE song SET s_songkey = (SELECT y_yearkey FROM year\
+        WHERE y_year = 2006)")
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)          
 
-def Q19(_conn, Sname):
+def Q19(_conn):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("delete input table name")
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT A.Name\
-        FROM ARTIST A\
-        JOIN SONGS S ON A.N_Key = S.N_Key\
-        WHERE S.Name = ?;", (Sname),)
-
+        "DELETE FROM song\
+        WHERE s_songkey = 0")
+        _conn.commit()
     except Error as e:
         print(e)          
 
@@ -331,38 +336,24 @@ def Q20(_conn, yr):
         FROM SONGS\
         WHERE Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = (?))\
         ORDER BY S_Key\
-        LIMIT 1;", (yr),)
+        LIMIT 1;", (yr,))
 
     except Error as e:
         print(e)          
 
 def main():
-    database = r"DatabaseTotalis.db"
+    database = r"new.db"
     # create a database connection
     conn = sqlite3.connect(database)
     with conn:
-        Q1(conn, "Sean Paul")
-        Q2(conn, "Justin Timberlake")
-        Q3(conn, 2020, 2021, "Pop")
-        Q4(conn, "London Bridge", 2006)
-        Q5(conn, "Dance, Dance", 2006)
-        Q6(conn)
-        Q7(conn, 2005)
-        Q8(conn, "Lil Nas X")
-        Q9(conn, "Butter", 2021)
-        Q10(conn, 2006)
-        Q11(conn, "Rock", "AJR")
-        Q12(conn, 2006)
-        Q13(conn, "Rihanna")
-        Q14(conn)
-        Q15(conn, "Funk")
-        Q16(conn, "OneRepublic")
-        Q17(conn, 2014, "Nicki Minaj")
-        Q18(conn)
-        Q19(conn, "679")
-        Q20(conn, 2020)
+        Q1(conn, "Beyonce Featuring Slim Thug")
+        Q1(conn, "D4L")
         
-
+        Q2(conn, "Justin Timberlake")
+        Q4(conn)
+        Q16(conn, "Bad Day")
+        #Q18(conn)
+        Q19(conn)
     conn.close()
 
 if __name__ == '__main__':
