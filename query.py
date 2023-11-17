@@ -342,7 +342,7 @@ def Q20(_conn, yr):
         print(e)          
 
 def main():
-    database = r"new.db"
+    database = r"DatabaseTotalis.db"
     # create a database connection
     conn = sqlite3.connect(database)
     with conn:
