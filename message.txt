@@ -1,182 +1,69 @@
-Find the top 1 song in a specific year.
-
-SELECT Name
-FROM SONGS
-WHERE Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = (?))
-ORDER BY S_Key
-LIMIT 1;
-
-Find the artist's name for the song with the title "?".
-
-SELECT A.Name
-FROM ARTIST A
-JOIN SONGS S ON A.N_Key = S.N_Key
-WHERE S.Name = ?;
-
-List all songs by the artist "?"
-
-SELECT S.Name
-FROM SONGS S
-JOIN ARTIST A ON S.N_Key = A.N_Key
-WHERE A.Name = ?;
-
-Get the number of songs by the artist "?".
+SELECT s_name FROM album, song, artist
+        WHERE al_songkey = s_songkey 
+        AND al_artistkey = a_artistkey
+        AND a_name = (?)
 
 SELECT COUNT(*) AS SongCount
-FROM SONGS S
-JOIN ARTIST A ON S.N_Key = A.N_Key
-WHERE A.Name = ?;
+        FROM song 
+        JOIN ARTIST ON s_songkey = a_artistkey
+        WHERE a_name = (?)
 
-List the top-ranked songs in the year "?" for a specific genre.
+SELECT s_name, b_rank
+        FROM song s
+        JOIN billboard b ON s.s_songkey = b.b_songkey
+        WHERE b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)\
+        AND s.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)\
+        AND s.s_releaseyearkey = (SELECT g_genrekey FROM genre WHERE g_name = ?)\
+        ORDER BY b_rank
+        LIMIT 10
 
-SELECT S.Name, B.Rank
-FROM SONGS S
-JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key
-WHERE B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)
-AND S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)
-AND S.G_Key = (SELECT G_Key FROM GENRE WHERE Name = ?)
-ORDER BY B.Rank
-LIMIT 10;
+INSERT INTO song VALUES (101, 11, 'Centuries')
 
+SELECT s_ame, b_rank
+FROM song s
+JOIN billboard b ON s.s_songkey = b.b_songkey
+WHERE s.s_songkey = (SELECT a_artistkey FROM artist WHERE a_name = ?)
+AND b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)
+AND b_rank <= 10
 
-
-
-Find the artist who released the song "?" in the year "?".
-
-SELECT A.Name
-FROM ARTIST A
-JOIN SONGS S ON A.N_Key = S.N_Key
-WHERE S.Name = ? AND S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?);
-
-List the songs by a specific artist that charted in the top 10 in the year "?".
-
-SELECT S.Name, B.Rank
-FROM SONGS S
-JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key
-WHERE S.N_Key = (SELECT N_Key FROM ARTIST WHERE Name = ?)
-AND B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)
-AND B.Rank <= 10;
-
-Retrieve the names of the top 5 artists with the most songs in the database.
-
-SELECT A.Name, COUNT(S.N_Key) AS SongCount
-FROM ARTIST A
-LEFT JOIN SONGS S ON A.N_Key = S.N_Key
-GROUP BY A.N_Key
+SELECT a_name, COUNT(s.s_songkey) AS SongCount
+FROM artist a\
+LEFT JOIN song s ON a.a_artistkey = s.s_songkey
+GROUP BY a.a_artistkey
 ORDER BY SongCount DESC
-LIMIT 5;
+LIMIT 5
 
-Find the most common genre for songs released in the year "?".
-
-SELECT G.Name, COUNT(*) AS GenreCount
-FROM GENRE G
-JOIN GENRE_PER_SONG GS ON G.G_Key = GS.G_Key
-JOIN SONGS S ON GS.S_Key = S.S_Key
-WHERE S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)
-GROUP BY G.G_Key
+SELECT g_name, COUNT(*) AS GenreCount
+FROM genre g
+JOIN genreprsong gs ON g.g_genrekey = gs.g_genrekey
+JOIN song s ON gs.g_songkey = s.s_songkey
+WHERE s.s_releaseyearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)
+GROUP BY g.g_genrekey
 ORDER BY GenreCount DESC
-LIMIT 1;
+LIMIT 1
 
-Get the top-ranked song for each year from a specific artist "?".
-
-SELECT A.Name AS Artist, S.Name AS Song, YEAR.Year AS Year, B.Rank
-FROM ARTIST A
-JOIN SONGS S ON A.N_Key = S.N_Key
-JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key
+SELECT a_name AS Artist, s_name AS Song, y_year AS Year, b_rank
+FROM artist a
+JOIN song s ON a.a_artistkey = s.s_songkey
+JOIN billboard b ON s.s_songkey = b.b_songkey
 JOIN (
-    SELECT DISTINCT Y_Key, MAX(Rank) AS MaxRank
-    FROM BILLBOARD_TOP_100
-    GROUP BY Y_Key
-) MaxRanks ON B.Y_Key = MaxRanks.Y_Key AND B.Rank = MaxRanks.MaxRank
-JOIN YEAR ON B.Y_Key = YEAR.Y_Key
-WHERE A.Name = ?;
+SELECT DISTINCT y_yearkey, MAX(b_rank) AS MaxRank
+FROM billboard
+GROUP BY y_yearkey) MaxRanks ON b.b_yearkey = MaxRanks.y_yearkey AND b_rank = MaxRanks.MaxRank
+JOIN year ON b.b_yearkey = y.y_yearkey
+WHERE a_name = ?
 
-List the songs that charted for an artist in a specific year "?".
+SELECT s_name, b_rank
+FROM song s
+JOIN billboard b ON s.s_songkey = b.b_songkey
+JOIN artist a ON b.b_songkey = a.a_artistkey
+WHERE a_name = ? AND b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)
 
-SELECT S.Name, B.Rank
-FROM SONGS S
-JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key
-JOIN ARTIST A ON B.N_Key = A.N_Key
-WHERE A.Name = ? AND B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?);
-
-Find the artist with the most songs that charted in the top 10 in a specific year "?".
-
-SELECT A.Name, COUNT(*) AS SongCount
-FROM ARTIST A
-JOIN SONGS S ON A.N_Key = S.N_Key
-JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key
-WHERE B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?) AND B.Rank <= 10
-GROUP BY A.N_Key
+SELECT a_name, COUNT(*) AS SongCount
+FROM artist a
+JOIN song s ON a.a_artistkey = s.s_songkey
+JOIN billboard b ON s.s_songkey = b.b_songkey
+WHERE b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?) AND b_rank <= 10
+GROUP BY a.a_artistkey
 ORDER BY SongCount DESC
-LIMIT 1;
-
-List all songs in a specific genre "?" by a particular artist "?".
-
-SELECT S.Name
-FROM SONGS S
-JOIN GENRE_PER_SONG GS ON S.S_Key = GS.S_Key
-JOIN GENRE G ON GS.G_Key = G.G_Key
-JOIN ARTIST A ON S.N_Key = A.N_Key
-WHERE G.Name = ? AND A.Name = ?;
-
-Retrieve the songs that have charted on a specific date "?".
-
-SELECT S.Name
-FROM SONGS S
-JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key
-WHERE B.ChartDate = ?;
-
-Calculate the average rank of songs by a specific artist "?".
-
-
-
-SELECT AVG(B.Rank) AS AverageRank
-FROM ARTIST A
-JOIN SONGS S ON A.N_Key = S.N_Key
-JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key
-WHERE A.Name = ?;
-
-Find the number of songs released in each year in the database.
-
-SELECT Y.Year, COUNT(S.S_Key) AS SongCount
-FROM YEAR Y
-LEFT JOIN SONGS S ON Y.Y_Key = S.Y_Key
-GROUP BY Y.Year;
-
-List the top-ranked songs that are not in a specific genre "?".
-
-SELECT S.Name, B.Rank
-FROM SONGS S
-JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key
-LEFT JOIN GENRE_PER_SONG GS ON S.S_Key = GS.S_Key
-LEFT JOIN GENRE G ON GS.G_Key = G.G_Key
-WHERE G.Name <> ?
-ORDER BY B.Rank
-LIMIT 10;
-
-Calculate the total number of songs in the database by a specific artist "?".
-
-SELECT COUNT(*) AS SongCount
-FROM SONGS S
-JOIN ARTIST A ON S.N_Key = A.N_Key
-WHERE A.Name = ?;
-
-Find the top-ranked song from the year "?" by a specific artist "?".
-
-SELECT S.Name
-FROM SONGS S
-JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key
-JOIN YEAR Y ON B.Y_Key = Y.Y_Key
-JOIN ARTIST A ON S.N_Key = A.N_Key
-WHERE Y.Year = ? AND A.Name = ?
-ORDER BY B
-
-Find the artist with the most songs in the "SONGS" table.
-
-
-SELECT A.Name, COUNT(S.S_Key) AS SongCount
-FROM ARTIST A
-LEFT JOIN SONGS S ON A.N_Key = S.N_Key
-GROUP BY A.Name
-ORDER BY SongCount DESC
-LIMIT 1;
+LIMIT 1
