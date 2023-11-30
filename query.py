@@ -30,7 +30,7 @@ def Q2(_conn, AName):
         FROM song \
         JOIN ARTIST ON s_songkey = a_artistkey\
         WHERE a_name = (?);", (AName,))
-
+                        
         data = cur.fetchall()
         for row in data:
             print(row)
@@ -39,20 +39,24 @@ def Q2(_conn, AName):
         print(e)
 
 
-def Q3(_conn, yr, year, Gname):
+def Q3(_conn, byear, syear, Gname):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT S.Name, B.Rank\
-        FROM SONGS S\
-        JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        WHERE B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)\
-        AND S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)\
-        AND S.G_Key = (SELECT G_Key FROM GENRE WHERE Name = ?)\
-        ORDER BY B.Rank\
-        LIMIT 10;", (yr, year, Gname))
+        '''SELECT s_name, b_rank
+        FROM song s
+        JOIN billboard b ON s.s_songkey = b.b_songkey
+        WHERE b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)\
+        AND s.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)\
+        AND s.s_releaseyearkey = (SELECT g_genrekey FROM genre WHERE g_name = ?)\
+        ORDER BY b_rank
+        LIMIT 10''', (byear, syear, Gname,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)
@@ -76,13 +80,18 @@ def Q5(_conn, Aname, yr):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT S.Name, B.Rank\
-        FROM SONGS S\
-        JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        WHERE S.N_Key = (SELECT N_Key FROM ARTIST WHERE Name = ?)\
-        AND B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)\
-        AND B.Rank <= 10;", (Aname, yr))
+        '''    
+        SELECT s_name, b_rank
+        FROM song s
+        JOIN billboard b ON s.s_songkey = b.b_songkey
+        WHERE s.s_songkey = (SELECT a_artistkey FROM artist WHERE a_name = ?)
+        AND b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)
+        AND b_rank <= 10''', (Aname, yr,))
 
+        data = cur.fetchall()
+        for row in data:
+            print(row)
+            
     except Error as e:
         print(e)
 
@@ -93,12 +102,16 @@ def Q6(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT A.Name, COUNT(S.N_Key) AS SongCount\
-        FROM ARTIST A\
-        LEFT JOIN SONGS S ON A.N_Key = S.N_Key\
-        GROUP BY A.N_Key\
-        ORDER BY SongCount DESC\
-        LIMIT 5;")
+        '''SELECT a_name, COUNT(s.s_songkey) AS SongCount
+        FROM artist a\
+        LEFT JOIN song s ON a.a_artistkey = s.s_songkey
+        GROUP BY a.a_artistkey
+        ORDER BY SongCount DESC
+        LIMIT 5''')
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)                
@@ -110,14 +123,18 @@ def Q7(_conn, yr):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT G.Name, COUNT(*) AS GenreCount\
-        FROM GENRE G\
-        JOIN GENRE_PER_SONG GS ON G.G_Key = GS.G_Key\
-        JOIN SONGS S ON GS.S_Key = S.S_Key\
-        WHERE S.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?)\
-        GROUP BY G.G_Key\
-        ORDER BY GenreCount DESC\
-        LIMIT 1;", (yr),)
+        '''SELECT g_name, COUNT(*) AS GenreCount
+        FROM genre g
+        JOIN genreprsong gs ON g.g_genrekey = gs.g_genrekey
+        JOIN song s ON gs.g_songkey = s.s_songkey
+        WHERE s.s_releaseyearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)
+        GROUP BY g.g_genrekey
+        ORDER BY GenreCount DESC
+        LIMIT 1''', (yr,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)                
@@ -129,17 +146,21 @@ def Q8(_conn, Aname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT A.Name AS Artist, S.Name AS Song, YEAR.Year AS Year, B.Rank\
-        FROM ARTIST A\
-        JOIN SONGS S ON A.N_Key = S.N_Key\
-        JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        JOIN (\
-            SELECT DISTINCT Y_Key, MAX(Rank) AS MaxRank\
-            FROM BILLBOARD_TOP_100\
-            GROUP BY Y_Key\
-        ) MaxRanks ON B.Y_Key = MaxRanks.Y_Key AND B.Rank = MaxRanks.MaxRank\
-        JOIN YEAR ON B.Y_Key = YEAR.Y_Key\
-        WHERE A.Name = ?;", (Aname))
+        '''SELECT a_name AS Artist, s_name AS Song, y_year AS Year, b_rank
+        FROM artist a
+        JOIN song s ON a.a_artistkey = s.s_songkey
+        JOIN billboard b ON s.s_songkey = b.b_songkey
+        JOIN (
+        SELECT DISTINCT y_yearkey, MAX(b_rank) AS MaxRank
+        FROM billboard
+        GROUP BY y_yearkey
+        ) MaxRanks ON b.b_yearkey = MaxRanks.y_yearkey AND b_rank = MaxRanks.MaxRank
+        JOIN year ON b.b_yearkey = y.y_yearkey
+        WHERE a_name = ?''', (Aname,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)                               
@@ -151,11 +172,15 @@ def Q9(_conn, Aname, yr):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT S.Name, B.Rank\
-        FROM SONGS S\
-        JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        JOIN ARTIST A ON B.N_Key = A.N_Key\
-        WHERE A.Name = ? AND B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?);", (Aname, yr),)
+        '''SELECT s_name, b_rank
+        FROM song s
+        JOIN billboard b ON s.s_songkey = b.b_songkey
+        JOIN artist a ON b.b_songkey = a.a_artistkey
+        WHERE a_name = ? AND b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)''', (Aname, yr,))
+            
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)                
@@ -167,14 +192,19 @@ def Q10(_conn, yr):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT A.Name, COUNT(*) AS SongCount\
-        FROM ARTIST A\
-        JOIN SONGS S ON A.N_Key = S.N_Key\
-        JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        WHERE B.Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = ?) AND B.Rank <= 10\
-        GROUP BY A.N_Key\
-        ORDER BY SongCount DESC\
-        LIMIT 1;", (yr),)
+        '''
+        SELECT a_name, COUNT(*) AS SongCount
+        FROM artist a
+        JOIN song s ON a.a_artistkey = s.s_songkey
+        JOIN billboard b ON s.s_songkey = b.b_songkey
+        WHERE b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?) AND b_rank <= 10
+        GROUP BY a.a_artistkey
+        ORDER BY SongCount DESC
+        LIMIT 1''', (yr,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)          
@@ -186,12 +216,13 @@ def Q11(_conn, Gname, Aname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT S.Name\
-        FROM SONGS S\
-        JOIN GENRE_PER_SONG GS ON S.S_Key = GS.S_Key\
-        JOIN GENRE G ON GS.G_Key = G.G_Key\
-        JOIN ARTIST A ON S.N_Key = A.N_Key\
-        WHERE G.Name = ? AND A.Name = ?;", (Gname, Aname),)
+        '''
+        enter query here
+        ''', (Gname, Aname),)
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)          
@@ -203,10 +234,13 @@ def Q12(_conn, Bchartdate):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT S.Name\
-        FROM SONGS S\
-        JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        WHERE B.ChartDate = ?;", (Bchartdate),)
+        '''
+        enter query here
+        ''', (Bchartdate,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)          
@@ -218,11 +252,13 @@ def Q13(_conn, Aname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT AVG(B.Rank) AS AverageRank\
-        FROM ARTIST A\
-        JOIN SONGS S ON A.N_Key = S.N_Key\
-        JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        WHERE A.Name = ?;", (Aname),)
+        '''
+        enter query here
+        ''', (Aname,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)          
@@ -234,10 +270,13 @@ def Q14(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT Y.Year, COUNT(S.S_Key) AS SongCount\
-        FROM YEAR Y\
-        LEFT JOIN SONGS S ON Y.Y_Key = S.Y_Key\
-        GROUP BY Y.Year;")
+        '''
+        enter query here
+        ''')
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)  
@@ -249,14 +288,13 @@ def Q15(_conn, Gname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT S.Name, B.Rank\
-        FROM SONGS S\
-        JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        LEFT JOIN GENRE_PER_SONG GS ON S.S_Key = GS.S_Key\
-        LEFT JOIN GENRE G ON GS.G_Key = G.G_Key\
-        WHERE G.Name <> ?\
-        ORDER BY B.Rank\
-        LIMIT 10;", (Gname),)
+        '''
+        enter query here
+        ''', (Gname,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)                  
@@ -268,9 +306,9 @@ def Q16(_conn, Sname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT s_name \
-        FROM song\
-        WHERE s_name = ?;", (Sname,))
+        '''
+        enter query here
+        ''', (Sname,))
 
         data = cur.fetchall()
         for row in data:
@@ -286,13 +324,13 @@ def Q17(_conn, yr, Aname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT S.Name\
-        FROM SONGS S\
-        JOIN BILLBOARD_TOP_100 B ON S.N_Key = B.N_Key\
-        JOIN YEAR Y ON B.Y_Key = Y.Y_Key\
-        JOIN ARTIST A ON S.N_Key = A.N_Key\
-        WHERE Y.Year = ? AND A.Name = ?\
-        ORDER BY B", (yr, Aname),)
+        '''
+        enter query here
+        ''', (yr, Aname,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)             
@@ -304,8 +342,9 @@ def Q18(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "UPDATE song SET s_songkey = (SELECT y_yearkey FROM year\
-        WHERE y_year = 2006)")
+        '''
+        enter query here
+        ''')
         data = cur.fetchall()
         for row in data:
             print(row)
@@ -319,9 +358,13 @@ def Q19(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "DELETE FROM song\
-        WHERE s_songkey = 0")
-        _conn.commit()
+        '''
+        enter query here
+        ''')
+        data = cur.fetchall()
+        for row in data:
+            print(row)
+
     except Error as e:
         print(e)          
 
@@ -332,28 +375,35 @@ def Q20(_conn, yr):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT Name\
-        FROM SONGS\
-        WHERE Y_Key = (SELECT Y_Key FROM YEAR WHERE Year = (?))\
-        ORDER BY S_Key\
-        LIMIT 1;", (yr,))
+        '''
+        enter query here
+        ''', (yr,))
+
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)          
 
 def main():
-    database = r"DatabaseTotalis.db"
+    database = r"new.db"
     # create a database connection
     conn = sqlite3.connect(database)
     with conn:
         Q1(conn, "Beyonce Featuring Slim Thug")
-        Q1(conn, "D4L")
+        #Q1(conn, "D4L")
+        Q2(conn, "The Black Eyed Peas")
+
+        Q3(conn, 2012, 2012, "Pop")
+        #Q4(conn)
+        Q5(conn, "Nickelback", 2008)
+        Q6(conn)
+        Q7(conn, 2017)
+        Q8(conn, "Justin Timberlake")
+        Q9(conn, "Kelly Clarkson", 2010)
+        Q10(conn, 2020)
         
-        Q2(conn, "Justin Timberlake")
-        Q4(conn)
-        Q16(conn, "Bad Day")
-        #Q18(conn)
-        Q19(conn)
     conn.close()
 
 if __name__ == '__main__':
