@@ -47,9 +47,9 @@ def Q3(_conn, byear, syear, Gname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT y_year, COUNT(*) AS SongCount\
-        FROM year y\
-        JOIN billboard b ON y.y_yearkey = b.b_yearkey\
+        '''SELECT y_year, COUNT(*) AS SongCount
+        FROM year y
+        JOIN billboard b ON y.y_yearkey = b.b_yearkey
         GROUP BY y_year;''', (byear, syear, Gname,))
 
         data = cur.fetchall()
