@@ -7,10 +7,11 @@ def Q1(_conn, AName):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT s_name FROM album, song, artist\
-        WHERE al_songkey = s_songkey \
-        AND al_artistkey = a_artistkey\
-        AND a_name = (?)", (AName,))
+        '''SELECT a.a_name AS Artist, s.s_name AS Song, al.al_name AS Album
+        FROM artist a
+        JOIN album al ON a.a_artistkey = al.al_artistkey
+        JOIN song s ON al.al_songkey = s.s_songkey
+        WHERE a.a_name = (?);''', (AName,))
 
         data = cur.fetchall()
         for row in data:
@@ -26,10 +27,11 @@ def Q2(_conn, AName):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "SELECT COUNT(*) AS SongCount\
-        FROM song \
-        JOIN ARTIST ON s_songkey = a_artistkey\
-        WHERE a_name = (?);", (AName,))
+        '''SELECT s_name, b_rank
+        FROM billboard b
+        JOIN song s ON b.b_songkey = s.s_songkey
+        ORDER BY b_rank
+        LIMIT 10;''', (AName,))
                         
         data = cur.fetchall()
         for row in data:
@@ -45,14 +47,10 @@ def Q3(_conn, byear, syear, Gname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT s_name, b_rank
-        FROM song s
-        JOIN billboard b ON s.s_songkey = b.b_songkey
-        WHERE b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)\
-        AND s.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)\
-        AND s.s_releaseyearkey = (SELECT g_genrekey FROM genre WHERE g_name = ?)\
-        ORDER BY b_rank
-        LIMIT 10''', (byear, syear, Gname,))
+        '''SELECT y_year, COUNT(*) AS SongCount\
+        FROM year y\
+        JOIN billboard b ON y.y_yearkey = b.b_yearkey\
+        GROUP BY y_year;''', (byear, syear, Gname,))
 
         data = cur.fetchall()
         for row in data:
@@ -68,7 +66,11 @@ def Q4(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        "INSERT INTO song VALUES (101, 11, 'Centuries')")
+        '''SELECT s_name
+        FROM song s
+        JOIN billboard b ON s.s_songkey = b.b_songkey
+        JOIN year y ON b.b_yearkey = y.y_yearkey
+        WHERE b_rank = 1 AND y_year = ?;''', (Aname,))
 
     except Error as e:
         print(e)
@@ -80,13 +82,8 @@ def Q5(_conn, Aname, yr):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''    
-        SELECT s_name, b_rank
-        FROM song s
-        JOIN billboard b ON s.s_songkey = b.b_songkey
-        WHERE s.s_songkey = (SELECT a_artistkey FROM artist WHERE a_name = ?)
-        AND b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)
-        AND b_rank <= 10''', (Aname, yr,))
+        '''SELECT AVG(b_rank) AS AverageRank
+        FROM billboard;''', (Aname, yr,))
 
         data = cur.fetchall()
         for row in data:
@@ -102,12 +99,9 @@ def Q6(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT a_name, COUNT(s.s_songkey) AS SongCount
-        FROM artist a\
-        LEFT JOIN song s ON a.a_artistkey = s.s_songkey
-        GROUP BY a.a_artistkey
-        ORDER BY SongCount DESC
-        LIMIT 5''')
+        '''SELECT * FROM song
+        ORDER BY s_songkey DESC
+        LIMIT 1;''')
 
         data = cur.fetchall()
         for row in data:
@@ -123,14 +117,10 @@ def Q7(_conn, yr):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT g_name, COUNT(*) AS GenreCount
-        FROM genre g
-        JOIN genreprsong gs ON g.g_genrekey = gs.g_genrekey
-        JOIN song s ON gs.g_songkey = s.s_songkey
-        WHERE s.s_releaseyearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)
-        GROUP BY g.g_genrekey
-        ORDER BY GenreCount DESC
-        LIMIT 1''', (yr,))
+        '''SELECT s.s_name 
+        FROM song s
+        JOIN artist a ON s.s_songkey = a.a_artistkey
+        WHERE TRIM(a.a_name) = ?;''', (yr,))
 
         data = cur.fetchall()
         for row in data:
@@ -146,17 +136,10 @@ def Q8(_conn, Aname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT a_name AS Artist, s_name AS Song, y_year AS Year, b_rank
-        FROM artist a
-        JOIN song s ON a.a_artistkey = s.s_songkey
-        JOIN billboard b ON s.s_songkey = b.b_songkey
-        JOIN (
-        SELECT DISTINCT y_yearkey, MAX(b_rank) AS MaxRank
-        FROM billboard
-        GROUP BY y_yearkey
-        ) MaxRanks ON b.b_yearkey = MaxRanks.y_yearkey AND b_rank = MaxRanks.MaxRank
-        JOIN year ON b.b_yearkey = y.y_yearkey
-        WHERE a_name = ?''', (Aname,))
+        '''SELECT y_year, COUNT(*) AS SongCount
+        FROM year y
+        JOIN song s ON y.y_yearkey = s.s_releaseyearkey
+        GROUP BY y_year;''', (Aname,))
 
         data = cur.fetchall()
         for row in data:
@@ -175,8 +158,7 @@ def Q9(_conn, Aname, yr):
         '''SELECT s_name, b_rank
         FROM song s
         JOIN billboard b ON s.s_songkey = b.b_songkey
-        JOIN artist a ON b.b_songkey = a.a_artistkey
-        WHERE a_name = ? AND b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)''', (Aname, yr,))
+        WHERE b_rank BETWEEN 5 AND 10;''', (Aname, yr,))
             
         data = cur.fetchall()
         for row in data:
@@ -192,15 +174,10 @@ def Q10(_conn, yr):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        SELECT a_name, COUNT(*) AS SongCount
-        FROM artist a
-        JOIN song s ON a.a_artistkey = s.s_songkey
-        JOIN billboard b ON s.s_songkey = b.b_songkey
-        WHERE b.b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?) AND b_rank <= 10
-        GROUP BY a.a_artistkey
-        ORDER BY SongCount DESC
-        LIMIT 1''', (yr,))
+        '''SELECT *
+        FROM song
+        ORDER BY s_releaseyearkey ASC
+        LIMIT 1;''', (yr,))
 
         data = cur.fetchall()
         for row in data:
@@ -216,9 +193,8 @@ def Q11(_conn, Gname, Aname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''', (Gname, Aname),)
+        '''SELECT COUNT(*) AS SongCount
+        FROM song;''', (Gname, Aname),)
 
         data = cur.fetchall()
         for row in data:
@@ -234,9 +210,11 @@ def Q12(_conn, Bchartdate):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''', (Bchartdate,))
+        '''SELECT s_name
+        FROM song s
+        JOIN billboard b ON s.s_songkey = b.b_songkey
+        JOIN year y ON b.b_yearkey = y.y_yearkey
+        WHERE y_year = ?;''', (Bchartdate,))
 
         data = cur.fetchall()
         for row in data:
@@ -252,9 +230,9 @@ def Q13(_conn, Aname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''', (Aname,))
+        '''SELECT *
+        FROM song
+        WHERE s_name LIKE 'Love%';''', (Aname,))
 
         data = cur.fetchall()
         for row in data:
@@ -270,9 +248,11 @@ def Q14(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''')
+        '''SELECT s_name, b_rank
+        FROM billboard b
+        JOIN song s ON b.b_songkey = s.s_songkey
+        ORDER BY b_rank DESC
+        LIMIT 1;''')
 
         data = cur.fetchall()
         for row in data:
@@ -288,9 +268,11 @@ def Q15(_conn, Gname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''', (Gname,))
+        '''SELECT al.al_name AS Album, y.y_year AS ReleaseYear
+        FROM album al
+        JOIN song s ON al.al_songkey = s.s_songkey
+        JOIN year y ON s.s_releaseyearkey = y.y_yearkey
+        WHERE y.y_year = ?;''', (Gname,))
 
         data = cur.fetchall()
         for row in data:
@@ -306,9 +288,10 @@ def Q16(_conn, Sname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''', (Sname,))
+        '''SELECT s.s_name AS Song, g.g_name AS Genre
+        FROM song s
+        JOIN genreprsong gp ON s.s_songkey = gp.g_songkey
+        JOIN genre g ON gp.g_genrekey = g.g_genrekey;''', (Sname,))
 
         data = cur.fetchall()
         for row in data:
@@ -324,9 +307,10 @@ def Q17(_conn, yr, Aname):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''', (yr, Aname,))
+        '''SELECT g.g_name AS Genre, COUNT(gp.g_songkey) AS SongCount
+        FROM genre g
+        LEFT JOIN genreprsong gp ON g.g_genrekey = gp.g_genrekey
+        GROUP BY g.g_name;''', (yr, Aname,))
 
         data = cur.fetchall()
         for row in data:
@@ -342,9 +326,11 @@ def Q18(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''')
+        '''SELECT al.al_name AS Album, COUNT(al.al_songkey) AS SongCount
+        FROM album al
+        GROUP BY al.al_name
+        HAVING COUNT(al.al_songkey) > 12;''')
+        
         data = cur.fetchall()
         for row in data:
             print(row)
@@ -358,9 +344,10 @@ def Q19(_conn):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''')
+        '''SELECT a.a_name AS Artist, al.al_name AS Album
+        FROM artist a
+        JOIN album al ON a.a_artistkey = al.al_artistkey;''')
+        
         data = cur.fetchall()
         for row in data:
             print(row)
@@ -375,9 +362,12 @@ def Q20(_conn, yr):
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''
-        enter query here
-        ''', (yr,))
+        '''SELECT a.a_name AS Artist, COUNT(b.b_songkey) AS NumOfSongs
+        FROM artist a
+        JOIN billboard b ON a.a_artistkey = b.b_artistkey
+        GROUP BY a.a_name
+        ORDER BY NumOfSongs DESC
+        LIMIT 3;''', (yr,))
 
         data = cur.fetchall()
         for row in data:
