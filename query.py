@@ -1,17 +1,21 @@
 import sqlite3
 from sqlite3 import Error
+k = 3000
 
-def Q1(_conn, AName):
+def G1(_conn, Aname):
     print("++++++++++++++++++++++++++++++++++")
     print("SELECT s_name FROM song")
     try:
+        artist = '%'+Aname+'%'
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT a.a_name AS Artist, s.s_name AS Song, al.al_name AS Album
-        FROM artist a
-        JOIN album al ON a.a_artistkey = al.al_artistkey
-        JOIN song s ON al.al_songkey = s.s_songkey
-        WHERE a.a_name = (?);''', (AName,))
+        '''
+        SELECT a_name AS Artist, s_name AS Song, al_name AS Album FROM album
+        INNER JOIN artist ON al_artistkey = a_artistkey
+        INNER JOIN song ON al_songkey = s_songkey
+        WHERE a_name LIKE '%s'
+        OR a_name LIKE '%s'
+        OR a_name LIKE '%s' '''% (artist[:len(artist)-1], artist[1:], artist,))
 
         data = cur.fetchall()
         for row in data:
@@ -21,17 +25,22 @@ def Q1(_conn, AName):
         print(e)
 
 
-def Q2(_conn, AName):
+def Q2(_conn, Aname):
     print("++++++++++++++++++++++++++++++++++")
     print("Get SongCount from artist")
     try:
+        artist = '%'+Aname+'%'
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT s_name, b_rank
+        '''
+        SELECT '%s' AS Artist, COUNT(*) AS 'Song Count'
         FROM billboard b
         JOIN song s ON b.b_songkey = s.s_songkey
-        ORDER BY b_rank
-        LIMIT 10;''', (AName,))
+        JOIN artist ON b_artistkey = a_artistkey
+        WHERE a_name LIKE '%s'
+        OR a_name LIKE '%s'
+        OR a_name LIKE '%s'
+        ORDER BY b_rank''' % (artist[1:len(artist)-1], artist[:len(artist)-1], artist[1:], artist,))
                         
         data = cur.fetchall()
         for row in data:
@@ -40,17 +49,19 @@ def Q2(_conn, AName):
     except Error as e:
         print(e)
 
-
-def Q3(_conn, byear, syear, Gname):
+def G3(_conn, Aname):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Artist")
     try:
+        artist = '%'+Aname+'%'
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT y_year, COUNT(*) AS SongCount
-        FROM year y
-        JOIN billboard b ON y.y_yearkey = b.b_yearkey
-        GROUP BY y_year;''', (byear, syear, Gname,))
+        '''
+        SELECT a_name AS Artist, a_about FROM artist
+        WHERE a_name LIKE '%s'
+        OR a_name LIKE '%s'
+        OR a_name LIKE '%s';
+        ''' % (artist[:len(artist)-1], artist[1:], artist,))
 
         data = cur.fetchall()
         for row in data:
@@ -60,30 +71,37 @@ def Q3(_conn, byear, syear, Gname):
         print(e)
 
 
-def Q4(_conn):
+def G4(_conn, yr):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT s_name
-        FROM song s
-        JOIN billboard b ON s.s_songkey = b.b_songkey
-        JOIN year y ON b.b_yearkey = y.y_yearkey
-        WHERE b_rank = 1 AND y_year = ?;''', (Aname,))
+        '''
+        SELECT b_rank+1 AS rank, s_name AS Song, a_name AS Artist, y_year AS Year 
+        FROM billboard, year, artist, song
+        WHERE b_yearkey = y_yearkey
+        AND b_artistkey = a_artistkey
+        AND b_songkey = s_songkey
+        AND y_year = ?;''', (yr,))
+        data = cur.fetchall()
+        for row in data:
+            print(row)
 
     except Error as e:
         print(e)
 
 
-def Q5(_conn, Aname, yr):
+def D5(_conn, Aname):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Delete Artist")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT AVG(b_rank) AS AverageRank
-        FROM billboard;''', (Aname, yr,))
+        '''
+        DELETE FROM artist
+        WHERE a_name  = '%s'
+        ''' % Aname)
 
         data = cur.fetchall()
         for row in data:
@@ -93,15 +111,17 @@ def Q5(_conn, Aname, yr):
         print(e)
 
 
-def Q6(_conn):
+def G6(_conn, song):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Get Song")
     try:
+        print(song)
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT * FROM song
-        ORDER BY s_songkey DESC
-        LIMIT 1;''')
+        '''SELECT s_name AS Song, y_year AS 'release year' FROM song
+        INNER JOIN year ON s_releaseyearkey = y_yearkey
+        WHERE s_name = '%s'
+        ORDER BY s_name DESC'''% song)
 
         data = cur.fetchall()
         for row in data:
@@ -232,7 +252,7 @@ def Q13(_conn, Aname):
         cur.execute(
         '''SELECT *
         FROM song
-        WHERE s_name LIKE 'Love%';''', (Aname,))
+        WHERE s_name LIKE 'Love%';''', ())
 
         data = cur.fetchall()
         for row in data:
@@ -320,25 +340,22 @@ def Q17(_conn, yr, Aname):
         print(e)             
 
 
-def Q18(_conn):
+def I18(_conn, inp, lis):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("INSERT input table artist")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT al.al_name AS Album, COUNT(al.al_songkey) AS SongCount
-        FROM album al
-        GROUP BY al.al_name
-        HAVING COUNT(al.al_songkey) > 12;''')
-        
-        data = cur.fetchall()
-        for row in data:
-            print(row)
+        '''
+        INSERT INTO artist(a_artistkey, a_name, a_about)
+        SELECT a_artistkey+1, '%s', '%s' FROM artist
+        ORDER BY a_artistkey DESC
+        LIMIT 1''' % (inp, lis))
 
     except Error as e:
         print(e)          
 
-def Q19(_conn):
+def D19(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("delete input table name")
     try:
@@ -356,7 +373,7 @@ def Q19(_conn):
         print(e)          
 
 
-def Q20(_conn, yr):
+def C20(_conn, yr):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
@@ -379,22 +396,38 @@ def Q20(_conn, yr):
 def main():
     database = r"new.db"
     # create a database connection
-    conn = sqlite3.connect(database)
-    with conn:
-        Q1(conn, "Beyonce Featuring Slim Thug")
-        #Q1(conn, "D4L")
-        Q2(conn, "The Black Eyed Peas")
+    ui = "-1"
+    while(ui.upper() != 'Q'):
+        conn = sqlite3.connect(database)
+        p = ui.split(" ")
+        if (p[0].upper() == 'H' or p[0].upper() == 'HELP'):
+            print("command 'makea artistname artist_about' inserts artist into artist table with name artistname and artist_about")
+            print("command 'geta artistname' returns artist description")
+            print("command 'getall artistname' returns artist and song")
+            print("command 'gets songname ' returns songs from song table")
+            print("command 'getb y' returns billboard from year y")
+            print("command 'getb song' returns song from billboard")
+            print("command 'songcount artistname' returns amount of songs from artist artistname")
+            print("command 'dela artistname' deletes artist artistname")
 
-        Q3(conn, 2012, 2012, "Pop")
-        #Q4(conn)
-        Q5(conn, "Nickelback", 2008)
-        Q6(conn)
-        Q7(conn, 2017)
-        Q8(conn, "Justin Timberlake")
-        Q9(conn, "Kelly Clarkson", 2010)
-        Q10(conn, 2020)
-        
-    conn.close()
+        with conn:
+            if(p[0].upper() == "MAKEA"):
+                I18(conn, p[1], " ".join(p[2:]))
+            if(p[0].upper() == "GETALL"):
+                G1(conn, " ".join(p[1:]))
+            if(p[0].upper() == "GETA"):
+                G3(conn, " ".join(p[1:]))
+            if(p[0].upper() == "GETS"):
+                G6(conn, " ".join(p[1:]))
+            if(p[0].upper() == "GETB"):
+                G4(conn, p[1])
+            if(p[0].upper() == "SONGCOUNT"):
+                Q2(conn, " ".join(p[1:]))
+            if(p[0].upper() == "DELA"):
+                D5(conn, " ".join(p[1:]))
+
+        conn.close()
+        ui = input("input: ")
 
 if __name__ == '__main__':
     main()
