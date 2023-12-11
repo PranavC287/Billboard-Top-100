@@ -38,6 +38,17 @@ def dropTable(_conn, tableName):
         print(e)
     print("++++++++++++++++++++++++++++++++++")
 
+def dropTrigger(_conn, TName):
+    print("++++++++++++++++++++++++++++++++++")
+    print("Drop TRIGGER " + TName)
+    try:
+        cur = _conn.cursor()
+        cur.execute("DROP TRIGGER " + TName)
+        
+    except Error as e:
+        print(e)
+    print("++++++++++++++++++++++++++++++++++")
+
 def createEverything(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Create billboard table")
@@ -99,7 +110,7 @@ def populateBillboard(_conn):
         cur.execute(
             '''
             INSERT INTO billboard(b_rank, b_songkey, b_artistkey, b_yearkey)
-            SELECT row_number() over (PARTITION BY year)-1 AS Rank, row_number() over () -1 AS s_key,
+            SELECT row_number() over (PARTITION BY year) AS Rank, row_number() over () -1 AS s_key,
             (
             SELECT COUNT(*)
             FROM everything e2
@@ -226,6 +237,25 @@ def populateSong(_conn):
     except Error as e:
         print(e)
 
+def createTriggerMKYR(_conn):
+    print("++++++++++++++++++++++++++++++++++")
+    print("Create year table")
+    try:
+        cur = _conn.cursor()
+        cur.execute(
+        '''      
+        CREATE TRIGGER mkyr
+        AFTER INSERT ON song
+        WHEN (NEW.s_releaseyearkey> 19 OR NEW.s_releaseyearkey < 0) 
+        BEGIN
+            DELETE FROM song
+            WHERE s_releaseyearkey = NEW.s_releaseyearkey;
+        END;
+        ''')
+
+    except Error as e:
+        print(e)
+
 def createTableYear(_conn):
     print("++++++++++++++++++++++++++++++++++")
     print("Create year table")
@@ -279,7 +309,7 @@ def populateGenre(_conn):
         i = 0
         for k in data:
             cur.execute(
-                "INSERT INTO genre(g_genrekey, g_name) VALUES (?, ?)", (i, k))
+                "INSERT INTO genre(g_genrekey, g_name) VALUES (?, ?)", (i, k.strip()))
             i=i+1
     except Error as e:
         print(e)
@@ -292,7 +322,8 @@ def createTableGenrePrSong(_conn):
         cur.execute(
         "CREATE TABLE genreprsong (\
         gs_genrekey decimal(9,0) not null, \
-        gs_songkey decimal(9,0) not null)")
+        gs_songkey decimal(9,0) not null)\
+        PRIMARY KEY gs_genrekey")
 
     except Error as e:
         print(e)
@@ -324,10 +355,11 @@ def main():
     # create a database connection
     conn = openConnection(database)
     with conn:
+        dropTrigger(conn, "mkyr")
+
         dropTable(conn, "album")
         dropTable(conn, "song")
         dropTable(conn, "artist")
-        dropTable(conn, "everything")
         dropTable(conn, "year")
         dropTable(conn, "billboard")
         dropTable(conn, "genreprsong")
@@ -352,7 +384,9 @@ def main():
         populateGenre(conn)
         populateGenrePrSong(conn)
         
+        createTriggerMKYR(conn)
 
+        dropTable(conn, "everything")
     closeConnection(conn, database)
 if __name__ == '__main__':
     main()

@@ -1,6 +1,5 @@
 Pop
 Rock
-Popular
 Rhythm and blues
 Jazz
 Blues
@@ -9,7 +8,7 @@ Country
 Classical
 Hip hop
 Synth-pop
-Punk rock
+Punk
 Funk
 Heavy metal
 Electronic dance

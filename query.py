@@ -78,7 +78,7 @@ def G4(_conn, yr):
         cur = _conn.cursor()
         cur.execute(
         '''
-        SELECT b_rank+1 AS rank, s_name AS Song, a_name AS Artist, y_year AS Year 
+        SELECT b_rank AS rank, s_name AS Song, a_name AS Artist, y_year AS Year 
         FROM billboard, year, artist, song
         WHERE b_yearkey = y_yearkey
         AND b_artistkey = a_artistkey
@@ -131,16 +131,22 @@ def G6(_conn, song):
         print(e)                
 
 
-def Q7(_conn, yr):
+def A7(_conn, Aname):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Average rank of songs by a specific artist")
     try:
+        artist = '%'+Aname+'%'
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT s.s_name 
-        FROM song s
-        JOIN artist a ON s.s_songkey = a.a_artistkey
-        WHERE TRIM(a.a_name) = ?;''', (yr,))
+        '''
+        SELECT AVG(b_rank) AS 'Average Rank'
+        FROM artist, billboard, song
+        WHERE a_artistkey = b_artistkey
+        AND b_songkey = s_songkey
+        AND (a_name LIKE '%s'
+        OR a_name LIKE '%s'
+        OR a_name LIKE '%s');
+    ''' %  (artist[:len(artist)-1], artist[1:], artist,))
 
         data = cur.fetchall()
         for row in data:
@@ -149,17 +155,22 @@ def Q7(_conn, yr):
     except Error as e:
         print(e)                
 
-
-def Q8(_conn, Aname):
+ 
+def P8(_conn, yr):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Popular Genre By Given Year")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT y_year, COUNT(*) AS SongCount
-        FROM year y
-        JOIN song s ON y.y_yearkey = s.s_releaseyearkey
-        GROUP BY y_year;''', (Aname,))
+        '''
+        SELECT g_name, COUNT(*) AS GenreCount FROM genre, genreprsong, song, billboard
+        WHERE g_genrekey = gs_genrekey
+        AND gs_songkey = s_songkey
+        AND s_songkey = b_songkey
+        AND b_yearkey = (SELECT y_yearkey FROM year WHERE y_year = ?)
+        GROUP BY g_name
+        ORDER BY GenreCount DESC
+        ''', (yr,))
 
         data = cur.fetchall()
         for row in data:
@@ -169,16 +180,21 @@ def Q8(_conn, Aname):
         print(e)                               
 
 
-def Q9(_conn, Aname, yr):
+def B9(_conn):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("return top 10 billboards")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT s_name, b_rank
-        FROM song s
-        JOIN billboard b ON s.s_songkey = b.b_songkey
-        WHERE b_rank BETWEEN 5 AND 10;''', (Aname, yr,))
+        '''
+        SELECT b_rank AS Rank, s_name AS Song, a_name AS Artist, y_year AS Year 
+        FROM billboard, artist, song, year
+        WHERE b_artistkey = a_artistkey
+        AND b_songkey = s_songkey
+        AND b_yearkey = y_yearkey
+        AND b_rank <11
+        ORDER BY y_year
+        ''')
             
         data = cur.fetchall()
         for row in data:
@@ -188,16 +204,19 @@ def Q9(_conn, Aname, yr):
         print(e)                
 
 
-def Q10(_conn, yr):
+def G10(_conn, genre):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Songs from Particular Genre")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT *
-        FROM song
-        ORDER BY s_releaseyearkey ASC
-        LIMIT 1;''', (yr,))
+        '''
+            SELECT s_name
+            FROM song, genreprsong, genre
+            WHERE s_songkey = gs_songkey
+            AND gs_genrekey = g_genrekey
+            AND g_name = '%s'
+            ''' % genre)
 
         data = cur.fetchall()
         for row in data:
@@ -207,14 +226,13 @@ def Q10(_conn, yr):
         print(e)          
 
 
-def Q11(_conn, Gname, Aname):
+def L11(_conn):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Availabe Genres")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT COUNT(*) AS SongCount
-        FROM song;''', (Gname, Aname),)
+        '''SELECT g_name AS Genres FROM genre''')
 
         data = cur.fetchall()
         for row in data:
@@ -224,17 +242,13 @@ def Q11(_conn, Gname, Aname):
         print(e)          
 
 
-def Q12(_conn, Bchartdate):
+def L12(_conn):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Availabe Years")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT s_name
-        FROM song s
-        JOIN billboard b ON s.s_songkey = b.b_songkey
-        JOIN year y ON b.b_yearkey = y.y_yearkey
-        WHERE y_year = ?;''', (Bchartdate,))
+        '''SELECT y_year AS 'Availabe Years' FROM year''')
 
         data = cur.fetchall()
         for row in data:
@@ -244,15 +258,22 @@ def Q12(_conn, Bchartdate):
         print(e)          
 
 
-def Q13(_conn, Aname):
+def P13(_conn, limit):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Most Popular Songs of all time")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT *
-        FROM song
-        WHERE s_name LIKE 'Love%';''', ())
+        '''
+        SELECT s_name AS Songs, COUNT(*) AS Appearance
+        FROM billboard, artist, song, year
+        WHERE b_artistkey = a_artistkey
+        AND b_songkey = s_songkey
+        AND b_yearkey = y_yearkey
+        GROUP BY s_name
+        ORDER BY Appearance DESC
+        LIMIT ?
+        ''', (limit,))
 
         data = cur.fetchall()
         for row in data:
@@ -262,17 +283,16 @@ def Q13(_conn, Aname):
         print(e)          
 
 
-def Q14(_conn):
+def D14(_conn, Sname):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Deletes song")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT s_name, b_rank
-        FROM billboard b
-        JOIN song s ON b.b_songkey = s.s_songkey
-        ORDER BY b_rank DESC
-        LIMIT 1;''')
+        '''
+        DELETE FROM song
+        WHERE s_name  = '%s'
+        ''' % Sname)
 
         data = cur.fetchall()
         for row in data:
@@ -282,17 +302,17 @@ def Q14(_conn):
         print(e)  
 
 
-def Q15(_conn, Gname):
+def I15(_conn, genre):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Add new genre to table")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT al.al_name AS Album, y.y_year AS ReleaseYear
-        FROM album al
-        JOIN song s ON al.al_songkey = s.s_songkey
-        JOIN year y ON s.s_releaseyearkey = y.y_yearkey
-        WHERE y.y_year = ?;''', (Gname,))
+        '''
+        INSERT INTO genre(g_genrekey, g_name)
+        SELECT  g_genrekey+1, '%s' FROM genre
+        ORDER BY g_genrekey DESC LIMIT 1
+        ''' % genre )
 
         data = cur.fetchall()
         for row in data:
@@ -302,16 +322,16 @@ def Q15(_conn, Gname):
         print(e)                  
 
 
-def Q16(_conn, Sname):
+def D16(_conn, Sname):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Delete Genre from table")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT s.s_name AS Song, g.g_name AS Genre
-        FROM song s
-        JOIN genreprsong gp ON s.s_songkey = gp.g_songkey
-        JOIN genre g ON gp.g_genrekey = g.g_genrekey;''', (Sname,))
+        '''
+        DELETE FROM genre
+        WHERE g_name  = '%s'
+        ''' % Sname)
 
         data = cur.fetchall()
         for row in data:
@@ -321,16 +341,20 @@ def Q16(_conn, Sname):
         print(e)       
 
 
-def Q17(_conn, yr, Aname):
+def Q17(_conn, Limit):
     print("++++++++++++++++++++++++++++++++++")
     print("Create input table name")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT g.g_name AS Genre, COUNT(gp.g_songkey) AS SongCount
-        FROM genre g
-        LEFT JOIN genreprsong gp ON g.g_genrekey = gp.g_genrekey
-        GROUP BY g.g_name;''', (yr, Aname,))
+        '''
+        SELECT a_name, s_name, g_name FROM artist, album, song, genreprsong, genre
+            WHERE a_artistkey = al_artistkey
+            AND al_songkey = s_songkey
+            AND s_songkey = gs_songkey
+            AND gs_genrekey = g_genrekey
+            LIMIT ?
+        ''', (Limit,))
 
         data = cur.fetchall()
         for row in data:
@@ -355,15 +379,20 @@ def I18(_conn, inp, lis):
     except Error as e:
         print(e)          
 
-def D19(_conn):
+def I19(_conn, inp, release):
     print("++++++++++++++++++++++++++++++++++")
-    print("delete input table name")
+    print("Create song")
     try:
+        print(inp)
+        print(release)
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT a.a_name AS Artist, al.al_name AS Album
-        FROM artist a
-        JOIN album al ON a.a_artistkey = al.al_artistkey;''')
+        '''
+        INSERT INTO song(s_songkey, s_name, s_releaseyearkey)
+        SELECT s_songkey+1, '%s', %s-2006 FROM song
+        ORDER BY s_songkey DESC
+        LIMIT 1
+        ''' % (inp, int(release)))
         
         data = cur.fetchall()
         for row in data:
@@ -373,18 +402,22 @@ def D19(_conn):
         print(e)          
 
 
-def C20(_conn, yr):
+def P20(_conn, limit):
     print("++++++++++++++++++++++++++++++++++")
-    print("Create input table name")
+    print("Artist with the most songs in the billboards")
     try:
         cur = _conn.cursor()
         cur.execute(
-        '''SELECT a.a_name AS Artist, COUNT(b.b_songkey) AS NumOfSongs
-        FROM artist a
-        JOIN billboard b ON a.a_artistkey = b.b_artistkey
-        GROUP BY a.a_name
-        ORDER BY NumOfSongs DESC
-        LIMIT 3;''', (yr,))
+        '''
+        SELECT a_name AS Artists, COUNT(*) AS Songs
+        FROM billboard, artist, song, year
+        WHERE b_artistkey = a_artistkey
+        AND b_songkey = s_songkey
+        AND b_yearkey = y_yearkey
+        GROUP BY a_name
+        ORDER BY Songs DESC
+        LIMIT ?
+        ''', (limit,))
 
         data = cur.fetchall()
         for row in data:
@@ -394,38 +427,78 @@ def C20(_conn, yr):
         print(e)          
 
 def main():
-    database = r"new.db"
+    database = r"DatabaseTotalis.db"
     # create a database connection
     ui = "-1"
+    print("WARNING: used '%/s' %/ song instead of '?', (song,) for some queries, might cause issues with old version of python")
+            
     while(ui.upper() != 'Q'):
         conn = sqlite3.connect(database)
         p = ui.split(" ")
         if (p[0].upper() == 'H' or p[0].upper() == 'HELP'):
-            print("command 'makea artistname artist_about' inserts artist into artist table with name artistname and artist_about")
-            print("command 'geta artistname' returns artist description")
             print("command 'getall artistname' returns artist and song")
-            print("command 'gets songname ' returns songs from song table")
-            print("command 'getb y' returns billboard from year y")
-            print("command 'getb song' returns song from billboard")
             print("command 'songcount artistname' returns amount of songs from artist artistname")
+            print("command 'geta artistname' returns artist description")
+            print("command 'getby year' returns billboard from year y")
             print("command 'dela artistname' deletes artist artistname")
+            print("command 'gets songname' returns songs from song table")
+            print("command 'avrank artistname' returns average song rank from artist artistname")
+            print("command 'popgy year' returns the most popular genres from the given year (Descending)")
+            print("command 'gettopb' returns billboards from all years in the top 10") 
+            print("command 'spg genrename' returns songs in genre genrename")
+            print("command 'listg' returns all genres")
+            print("command 'listy' returns all available years")
+            print("command 'pops x' returns top x number of most popular songs of all time from the billboard (Descending)")
+            print("command 'dels songname' returns songs from song table")
+            print("command 'makeg genrename' inserts into genre table newgenre")
+            print("command 'delg genrename' deletes genre newgenre")
+            print("command 'asg x' Shows  Artist, Song, Genre in limit x")
+            print("command 'makea artistname artist_about' inserts into artist table artistname and artist_about (LIMITED TO SINGLE ARTIST NAME)")
+            print("command 'makes songname releasedate' inserts into song table songname and song release date")
+            print("command 'popa x' returns top x number of most popular artist of all time from the billboard (Descending)")
 
+            
         with conn:
-            if(p[0].upper() == "MAKEA"):
-                I18(conn, p[1], " ".join(p[2:]))
             if(p[0].upper() == "GETALL"):
                 G1(conn, " ".join(p[1:]))
-            if(p[0].upper() == "GETA"):
-                G3(conn, " ".join(p[1:]))
-            if(p[0].upper() == "GETS"):
-                G6(conn, " ".join(p[1:]))
-            if(p[0].upper() == "GETB"):
-                G4(conn, p[1])
             if(p[0].upper() == "SONGCOUNT"):
                 Q2(conn, " ".join(p[1:]))
+            if(p[0].upper() == "GETA"):
+                G3(conn, " ".join(p[1:]))
+            if(p[0].upper() == "GETBY"):
+                G4(conn, p[1])
             if(p[0].upper() == "DELA"):
-                D5(conn, " ".join(p[1:]))
-
+                D5(conn, " ".join(p[1:]))  
+            if(p[0].upper() == "GETS"):
+                G6(conn, " ".join(p[1:]))          
+            if(p[0].upper() == "AVRANK"):
+                A7(conn, " ".join(p[1:]))
+            if(p[0].upper() == "POPGY"):
+                P8(conn, " ".join(p[1:]))
+            if(p[0].upper() == "GETTOPB"):
+                B9(conn)
+            if(p[0].upper() == "SPG"):
+                G10(conn, " ".join(p[1:]))  
+            if(p[0].upper() == "LISTG"):
+                L11(conn)
+            if(p[0].upper() == "LISTY"):
+                L12(conn)           
+            if(p[0].upper() == "POPS"):
+                P13(conn, p[1])
+            if(p[0].upper() == "DELS"):
+                D14(conn, " ".join(p[1:]))     
+            if(p[0].upper() == "MAKEG"):
+                I15(conn, " ".join(p[1:])) 
+            if(p[0].upper() == "DELG"):
+                D16(conn, " ".join(p[1:]))  
+            if(p[0].upper() == "ASG"):
+                Q17(conn, p[1])                    
+            if(p[0].upper() == "MAKEA"):
+                I18(conn, p[1], " ".join(p[2:]))
+            if(p[0].upper() == "MAKES"):
+                I19(conn, " ".join(p[1:len(p)-1]), p[len(p)-1])
+            if(p[0].upper() == "POPA"):
+                P20(conn, p[1])
         conn.close()
         ui = input("input: ")
 
